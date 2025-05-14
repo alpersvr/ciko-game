@@ -91,9 +91,9 @@
         #defaultHeadsContainer {
             margin-top: 10px;
             margin-bottom: 5px;
-            display: flex; /* Kafaları yan yana dizmek için */
-            flex-wrap: wrap; /* Sığmazsa alta geçsin */
-            justify-content: center; /* Ortalamak için */
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             align-items: center;
         }
         .default-head-img {
@@ -101,7 +101,7 @@
             height: 45px;
             border: 2px solid #7f8c8d;
             border-radius: 4px;
-            margin: 3px; /* Aralarında biraz boşluk */
+            margin: 3px;
             cursor: pointer;
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
             vertical-align: middle;
@@ -114,7 +114,7 @@
             border-color: #3498db;
             box-shadow: 0 0 8px #3498db;
         }
-        p.controls-text { /* Kontrol bölümündeki p etiketleri için ortak stil */
+        p.controls-text {
             margin-top: 8px;
             margin-bottom: 8px;
             font-size: 0.85em;
@@ -148,6 +148,7 @@
         <p class="controls-text">Önerilen boyut: 50x50 piksel</p>
     </div>
 
+    <audio id="userPaddleHitSound" src="sounds/fuseteaCiko.opus" preload="auto"></audio>
     <script>
         // Canvas ve Context
         const canvas = document.getElementById('pongCanvas');
@@ -158,11 +159,12 @@
         const imageUpload = document.getElementById('imageUpload');
         const imagePreview = document.getElementById('imagePreview');
         const defaultHeadsContainer = document.getElementById('defaultHeadsContainer');
+        const userPaddleHitSound = document.getElementById('userPaddleHitSound'); // Ses elementini al
 
         // Oyun Durumu
         let gameRunning = false;
         let animationFrameId;
-        let lastTime = 0; // Delta time için son zaman damgası
+        let lastTime = 0;
 
         // Canvas Boyutları
         let canvasWidth = 800;
@@ -197,7 +199,6 @@
         const ballImage = new Image();
         let imageLoaded = false;
 
-        // Kullanıcının sağladığı defaultHeads dizisi
         const defaultHeads = [
             { name: "bonus", src: 'images/bonusCiko.jpeg' },
             { name: "Havuz", src: 'images/havuzCiko.jpeg' },
@@ -242,13 +243,12 @@
 
         if (defaultHeads.length > 0 && defaultHeadsContainer.querySelector('.default-head-img')) {
             const firstDefaultImageElement = defaultHeadsContainer.querySelector('.default-head-img');
-            // İlk resmi yüklemeyi dene. Bu, ballImage.onload veya .onerror'ı tetikleyecektir.
             selectDefaultHead(firstDefaultImageElement.src, firstDefaultImageElement);
         } else if (defaultHeads.length > 0) {
             console.warn("Varsayılan kafaların hiçbiri için img elementi oluşturulamadı veya hepsi hatalı.");
-            ballImage.src = 'https://placehold.co/50x50/7f8c8d/FFFFFF?text=TOP&font=roboto'; // Genel fallback
+            ballImage.src = 'https://placehold.co/50x50/7f8c8d/FFFFFF?text=TOP&font=roboto';
         } else {
-             ballImage.src = 'https://placehold.co/50x50/7f8c8d/FFFFFF?text=TOP&font=roboto'; // Genel fallback
+             ballImage.src = 'https://placehold.co/50x50/7f8c8d/FFFFFF?text=TOP&font=roboto';
         }
 
         ballImage.onload = () => {
@@ -286,20 +286,19 @@
 
         const NET_COLOR = 'rgba(255, 255, 255, 0.5)', PADDLE_COLOR = '#3498db', TEXT_COLOR = '#ecf0f1', BALL_FALLBACK_COLOR = '#e74c3c';
         const net = { x: 0, y: 0, width: 2, height: 10, color: NET_COLOR };
-        // userPaddle.speed, fare ile kontrol edildiği için deltaTime'a ihtiyaç duymaz, anlık konuma ayarlanır.
         const userPaddle = { x: 10, y: 0, width: 15, height: 100, color: PADDLE_COLOR, score: 0, speed: 10 };
-        const comPaddle = { x: 0, y: 0, width: 15, height: 100, color: PADDLE_COLOR, score: 0, speed: 180 }; // Piksel/saniye
+        const comPaddle = { x: 0, y: 0, width: 15, height: 100, color: PADDLE_COLOR, score: 0, speed: 200 };
         const ball = {
             x: 0, y: 0, baseSize: 25,
-            speed: 320, // Başlangıç genel hızı (Piksel/saniye) - resetBall'da yönlü hızlara dönüştürülür
-            velocityX: 0, // resetBall'da ayarlanacak
-            velocityY: 0, // resetBall'da ayarlanacak
+            speed: 320,
+            velocityX: 0,
+            velocityY: 0,
             image: ballImage,
-            maxSpeed: 700, // Maksimum hız (piksel/saniye)
-            speedIncrement: 35 // Her vuruşta hız artışı (piksel/saniye)
+            maxSpeed: 700,
+            speedIncrement: 35
         };
 
-        let highScore = localStorage.getItem('pongHighScoreKafaliV5') || 0; // localStorage key güncellendi
+        let highScore = localStorage.getItem('pongHighScoreKafaliV5') || 0;
         highScoreDisplay.textContent = `Rekor: ${highScore}`;
 
         function updateHighScore() {
@@ -311,6 +310,18 @@
         }
         function updateCurrentScoreDisplay() {
             currentScoreDisplay.textContent = `Skor: ${userPaddle.score} - ${comPaddle.score}`;
+        }
+
+        // Ses çalma fonksiyonu
+        function playUserPaddleHitSound() {
+            if (userPaddleHitSound) {
+                userPaddleHitSound.currentTime = 0; // Sesi başa sar (ard arda hızlı vuruşlar için)
+                userPaddleHitSound.play().catch(error => {
+                    // console.warn("Ses çalınamadı, muhtemelen kullanıcı etkileşimi bekleniyor.", error);
+                    // Tarayıcılar, kullanıcı etkileşimi olmadan ses çalmayı engelleyebilir.
+                    // startGame içinde .load() çağrısı bu sorunu çözmeye yardımcı olabilir.
+                });
+            }
         }
 
         function drawRect(x, y, w, h, color) { context.fillStyle = color; context.fillRect(x, y, w, h); }
@@ -344,25 +355,16 @@
 
         function resetBall(serveToPlayer) {
             ball.x = canvas.width / 2; ball.y = canvas.height / 2;
-            // Her reset'te topun genel hızını başlangıç değerine ayarla
-            let currentBallSpeed = 320; // Piksel/saniye, ball.speed'in başlangıç değeriyle aynı olmalı
-
-            let angle = (Math.random() * Math.PI / 2) - (Math.PI / 4); // -45 ile +45 derece arası rastgele açı
-            // Servis atan oyuncuya göre topun yönünü belirle
-            // Oyuncu servis atıyorsa (serveToPlayer true), top sağa doğru (-1 ile çarpılmaz)
-            // Bilgisayar servis atıyorsa (serveToPlayer false), top sola doğru (-1 ile çarpılır)
+            let currentBallSpeed = 320;
+            let angle = (Math.random() * Math.PI / 2) - (Math.PI / 4);
             const directionMultiplier = serveToPlayer ? 1 : -1;
-
-            // Topun başlangıç hızını bileşenlerine ayır
-            // Topun %70 hızla başlaması için 0.7 ile çarpılıyor.
             ball.velocityX = directionMultiplier * currentBallSpeed * Math.cos(angle) * 0.7;
             ball.velocityY = currentBallSpeed * Math.sin(angle) * 0.7;
         }
 
-
         function update(deltaTime) {
-            if (!deltaTime || deltaTime > 0.1) { // Çok büyük deltaTime değerlerini engelle (tarayıcı sekmesi arka plana alındığında vb.)
-                deltaTime = 1/60; // Varsayılan bir değere düşür
+            if (!deltaTime || deltaTime > 0.1) {
+                deltaTime = 1/60;
             }
 
             ball.x += ball.velocityX * deltaTime;
@@ -380,29 +382,30 @@
 
             let player = (ball.x < canvas.width / 2) ? userPaddle : comPaddle;
             if (collision(ball, player)) {
+                // Eğer çarpan oyuncu raketi ise sesi çal
+                if (player === userPaddle) {
+                    playUserPaddleHitSound();
+                }
+
                 let collidePoint = (ball.y - (player.y + player.height / 2)) / (player.height / 2);
                 let angleRad = (Math.PI / 4) * collidePoint;
                 let collisionDirection = (ball.x < canvas.width / 2) ? 1 : -1;
-
-                // Topun mevcut hız büyüklüğünü al
                 let currentSpeedMagnitude = Math.sqrt(ball.velocityX * ball.velocityX + ball.velocityY * ball.velocityY);
-                // Yeni hızı hesapla
                 let newSpeed = currentSpeedMagnitude + ball.speedIncrement;
                 if (newSpeed > ball.maxSpeed) newSpeed = ball.maxSpeed;
-
                 ball.velocityX = collisionDirection * newSpeed * Math.cos(angleRad);
                 ball.velocityY = newSpeed * Math.sin(angleRad);
             }
 
             let bEffRadX = (imageLoaded && ball.image.complete && ball.image.naturalWidth > 0) ? (ball.baseSize * (ball.image.naturalWidth / ball.image.naturalHeight)) : ball.baseSize;
-            let serveToPlayerNext = true; // Varsayılan olarak oyuncu servis atar (bilgisayar sayı alırsa)
-            if (ball.x - bEffRadX < 0) { // Bilgisayar skor yapar
+            let serveToPlayerNext = true;
+            if (ball.x - bEffRadX < 0) {
                 comPaddle.score++;
-                serveToPlayerNext = true; // Oyuncu servis atacak
+                serveToPlayerNext = true;
                 resetBall(serveToPlayerNext);
-            } else if (ball.x + bEffRadX > canvas.width) { // Kullanıcı skor yapar
+            } else if (ball.x + bEffRadX > canvas.width) {
                 userPaddle.score++;
-                serveToPlayerNext = false; // Bilgisayar servis atacak
+                serveToPlayerNext = false;
                 resetBall(serveToPlayerNext);
             }
             updateHighScore(); updateCurrentScoreDisplay();
@@ -418,16 +421,13 @@
 
         function gameLoop(currentTime) {
             if (!gameRunning) return;
-
             if (!lastTime) {
                 lastTime = currentTime;
                 animationFrameId = requestAnimationFrame(gameLoop);
                 return;
             }
-
             const deltaTime = (currentTime - lastTime) / 1000;
             lastTime = currentTime;
-
             update(deltaTime);
             render();
             animationFrameId = requestAnimationFrame(gameLoop);
@@ -448,14 +448,27 @@
 
         function startGame() {
             if (gameRunning) return;
+
+            // Sesin kullanıcı etkileşimi sonrası çalınabilmesi için ses elementini yükle
+            if (userPaddleHitSound) {
+                userPaddleHitSound.load(); // Tarayıcının sesi yüklemesine izin ver
+                // Alternatif olarak, bazı tarayıcılarda ilk play'i sessizce yapıp hatayı yakalamak gerekebilir:
+                // userPaddleHitSound.play().then(() => {
+                //     userPaddleHitSound.pause(); // Hemen durdur, sadece "kilidi açmak" için
+                //     userPaddleHitSound.currentTime = 0;
+                // }).catch(error => {
+                //     console.warn("Ses başlatma denemesi başarısız oldu, muhtemelen kullanıcı etkileşimi sonrası çalışacak.", error);
+                // });
+            }
+
+
             if (!imageLoaded && ballImage.src && !ballImage.src.startsWith('data:') && !ballImage.src.includes('placehold.co')) {
                  alert(`Uyarı: Seçili kafa resmi ("${ballImage.src.split('/').pop()}") yüklenemedi. Oyun yedek topla başlayacak.`);
             }
             gameRunning = true; startButton.textContent = "Oyun Sürüyor..."; startButton.disabled = true;
             userPaddle.score = 0; comPaddle.score = 0;
             updateCurrentScoreDisplay();
-            resetBall(true); // İlk servis oyuncuya
-            
+            resetBall(true);
             lastTime = 0;
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
             animationFrameId = requestAnimationFrame(gameLoop);
@@ -469,9 +482,7 @@
 
         setCanvasDimensions();
         updateCurrentScoreDisplay();
-        // İlk kafa seçimi ve `drawInitialScreen` çağrısı, defaultHeads döngüsü ve ballImage.onload/onerror içinde yönetiliyor.
 
     </script>
 </body>
 </html>
-
