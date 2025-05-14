@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kafalı Pong Oyunu </title>
+    <title>Kafalı Pong Oyunu</title>
     <style>
         body {
             display: flex;
@@ -15,7 +15,7 @@
             background-color: #2c3e50;
             font-family: 'Arial', sans-serif;
             color: #ecf0f1;
-            padding: 15px; /* Biraz azaltıldı */
+            padding: 15px;
             box-sizing: border-box;
         }
         canvas {
@@ -35,7 +35,7 @@
             margin-bottom: 10px;
         }
         #highScoreDisplay, #currentScoreDisplay {
-            font-size: 1.1em; /* Biraz küçültüldü */
+            font-size: 1.1em;
             padding: 7px 10px;
             background-color: #34495e;
             border-radius: 5px;
@@ -52,14 +52,14 @@
         }
         #imageUploadLabel, #startButton {
             display: inline-block;
-            padding: 10px 18px; /* Biraz küçültüldü */
+            padding: 10px 18px;
             background-color: #3498db;
             color: white;
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s ease;
             border: none;
-            font-size: 0.95em; /* Biraz küçültüldü */
+            font-size: 0.95em;
             margin: 5px;
         }
         #imageUploadLabel:hover, #startButton:hover {
@@ -76,12 +76,13 @@
             margin-top: 8px;
         }
         #imagePreview {
-            max-width: 45px; /* Biraz küçültüldü */
+            max-width: 45px;
             max-height: 45px;
-            border: 2px solid transparent; /* Seçim için kenarlık */
+            border: 2px solid transparent;
             border-radius: 4px;
-            display: inline-block; /* Diğerleriyle aynı hizada */
+            display: inline-block;
             vertical-align: middle;
+            object-fit: cover;
         }
         #imagePreview.active-head {
             border-color: #3498db;
@@ -90,31 +91,37 @@
         #defaultHeadsContainer {
             margin-top: 10px;
             margin-bottom: 5px;
+            display: flex; /* Kafaları yan yana dizmek için */
+            flex-wrap: wrap; /* Sığmazsa alta geçsin */
+            justify-content: center; /* Ortalamak için */
+            align-items: center;
         }
         .default-head-img {
-            width: 45px; /* Boyutlar imagePreview ile aynı */
+            width: 45px;
             height: 45px;
             border: 2px solid #7f8c8d;
             border-radius: 4px;
-            margin: 0 5px;
+            margin: 3px; /* Aralarında biraz boşluk */
             cursor: pointer;
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
             vertical-align: middle;
+            object-fit: cover;
         }
         .default-head-img:hover {
             border-color: #bdc3c7;
         }
         .default-head-img.active-head {
-            border-color: #3498db; /* Aktif olan için belirgin kenarlık */
+            border-color: #3498db;
             box-shadow: 0 0 8px #3498db;
         }
-        p {
-            margin-top: 5px;
-            font-size: 0.85em; /* Biraz küçültüldü */
+        p.controls-text { /* Kontrol bölümündeki p etiketleri için ortak stil */
+            margin-top: 8px;
+            margin-bottom: 8px;
+            font-size: 0.85em;
         }
         h1 {
             margin-bottom: 10px;
-            font-size: 1.8em; /* Biraz küçültüldü */
+            font-size: 1.8em;
         }
     </style>
 </head>
@@ -130,15 +137,15 @@
 
     <div id="controls">
         <button id="startButton">Oyunu Başlat</button>
+        <p class="controls-text" style="margin-top: 15px;">Varsayılan Kafa Seç:</p>
         <div id="defaultHeadsContainer">
-            <p style="margin-bottom: 5px;">Varsayılan Kafalar:</p>
             </div>
         <label id="imageUploadLabel" for="imageUpload">Kendi Kafanı Yükle (PNG/JPG)</label>
         <input type="file" id="imageUpload" accept="image/png, image/jpeg">
         <div id="imagePreviewContainer">
              <img id="imagePreview" src="#" alt="Yüklenen Resim" style="display:none;">
         </div>
-        <p>Önerilen boyut: 50x50 piksel</p>
+        <p class="controls-text">Önerilen boyut: 50x50 piksel</p>
     </div>
 
     <script>
@@ -155,6 +162,7 @@
         // Oyun Durumu
         let gameRunning = false;
         let animationFrameId;
+        let lastTime = 0; // Delta time için son zaman damgası
 
         // Canvas Boyutları
         let canvasWidth = 800;
@@ -162,15 +170,14 @@
 
         function setCanvasDimensions() {
             if (window.innerWidth < 820) {
-                canvasWidth = window.innerWidth - 30; // Padding'e göre ayarlandı
+                canvasWidth = window.innerWidth - 30;
                 canvasHeight = canvasWidth * 0.75;
             } else {
                 canvasWidth = 800;
                 canvasHeight = 600;
             }
-            // Yükseklik kontrolü, kontroller ve başlık için daha fazla yer bırakacak şekilde ayarlandı
-            if (window.innerHeight < (canvasHeight + 280) ) {
-                 canvasHeight = window.innerHeight - 280;
+            if (window.innerHeight < (canvasHeight + 300) ) {
+                 canvasHeight = window.innerHeight - 300;
                  if (canvasHeight < 250) canvasHeight = 250;
                  canvasWidth = canvasHeight / 0.75;
                  if (canvasWidth > window.innerWidth - 30) canvasWidth = window.innerWidth - 30;
@@ -190,24 +197,19 @@
         const ballImage = new Image();
         let imageLoaded = false;
 
+        // Kullanıcının sağladığı defaultHeads dizisi
         const defaultHeads = [
-    { name: "bonus", src: 'images/bonusCiko.jpeg' },
-    { name: "Havuz", src: 'images/havuzCiko.jpeg' },
-    { name: "ppys", src: 'images/ppysCiko.jpeg' },
-    { name: "Ciko", src: 'images/shortHairCiko.jpeg' },
-    
-    // ... diğer yerel resimleriniz ...
-    // İsterseniz placeholder'ları da tutabilirsiniz:
-    { name: "Placeholder Kırmızı", src: 'https://placehold.co/50x50/E74C3C/FFFFFF?text=P1&font=roboto' },
-];
-        let currentlySelectedHeadElement = null; // Aktif olan kafa elementini tutar
+            { name: "bonus", src: 'images/bonusCiko.jpeg' },
+            { name: "Havuz", src: 'images/havuzCiko.jpeg' },
+            { name: "ppys", src: 'images/ppysCiko.jpeg' },
+            { name: "Ciko", src: 'images/shortHairCiko.jpeg' },
+            { name: "Placeholder Kırmızı", src: 'https://placehold.co/50x50/E74C3C/FFFFFF?text=P1&font=roboto' },
+        ];
+        let currentlySelectedHeadElement = null;
 
         function setActiveHeadVisuals(selectedElement) {
-            // Tüm default head imajlarından 'active-head' sınıfını kaldır
             document.querySelectorAll('.default-head-img').forEach(img => img.classList.remove('active-head'));
-            // Yüklenen resim önizlemesinden 'active-head' sınıfını kaldır
             imagePreview.classList.remove('active-head');
-
             if (selectedElement) {
                 selectedElement.classList.add('active-head');
             }
@@ -216,8 +218,8 @@
 
         function selectDefaultHead(headSrc, clickedImgElement) {
             ballImage.src = headSrc;
-            imagePreview.style.display = 'none'; // Yüklenen resim önizlemesini gizle
-            imageUpload.value = ""; // Dosya seçimini temizle
+            imagePreview.style.display = 'none';
+            imageUpload.value = "";
             setActiveHeadVisuals(clickedImgElement);
         }
 
@@ -230,29 +232,41 @@
             imgElement.addEventListener('click', () => {
                 selectDefaultHead(head.src, imgElement);
             });
+            imgElement.onerror = function() {
+                this.alt = "Resim Yüklenemedi";
+                this.src = 'https://placehold.co/50x50/CCCCCC/000000?text=Hata&font=roboto';
+                console.warn(`Uyarı: Varsayılan kafa "${head.src}" yüklenemedi.`);
+            };
             defaultHeadsContainer.appendChild(imgElement);
         });
 
-        // Başlangıçta ilk varsayılan kafayı seçili yap
-        if (defaultHeads.length > 0) {
+        if (defaultHeads.length > 0 && defaultHeadsContainer.querySelector('.default-head-img')) {
             const firstDefaultImageElement = defaultHeadsContainer.querySelector('.default-head-img');
-            if (firstDefaultImageElement) {
-                 selectDefaultHead(defaultHeads[0].src, firstDefaultImageElement);
-            }
-        } else { // Hiç varsayılan kafa yoksa placeholder kullan
-             ballImage.src = 'https://placehold.co/50x50/E91E63/FFFFFF?text=KAFA&font=roboto';
+            // İlk resmi yüklemeyi dene. Bu, ballImage.onload veya .onerror'ı tetikleyecektir.
+            selectDefaultHead(firstDefaultImageElement.src, firstDefaultImageElement);
+        } else if (defaultHeads.length > 0) {
+            console.warn("Varsayılan kafaların hiçbiri için img elementi oluşturulamadı veya hepsi hatalı.");
+            ballImage.src = 'https://placehold.co/50x50/7f8c8d/FFFFFF?text=TOP&font=roboto'; // Genel fallback
+        } else {
+             ballImage.src = 'https://placehold.co/50x50/7f8c8d/FFFFFF?text=TOP&font=roboto'; // Genel fallback
         }
-
 
         ballImage.onload = () => {
             imageLoaded = true;
+            if (currentlySelectedHeadElement) {
+                currentlySelectedHeadElement.style.borderColor = '';
+                 if(currentlySelectedHeadElement.classList.contains('active-head')){
+                     currentlySelectedHeadElement.style.borderColor = '#3498db';
+                }
+            }
             if (!gameRunning) drawInitialScreen();
         };
         ballImage.onerror = () => {
-            console.error("Seçilen veya varsayılan kafa resmi yüklenemedi. Fallback kullanılacak.");
-            imageLoaded = false; // Hata durumunda daire çizilsin
-            if (currentlySelectedHeadElement) { // Eğer bir element seçiliyse ve yüklenemediyse
-                currentlySelectedHeadElement.style.border = '2px dashed red'; // Hata olduğunu belirt
+            console.error(`Hata: "${ballImage.src}" resmi yüklenemedi. Yedek top kullanılacak.`);
+            imageLoaded = false;
+            if (currentlySelectedHeadElement) {
+                currentlySelectedHeadElement.style.border = '2px dashed red';
+                currentlySelectedHeadElement.title = `${currentlySelectedHeadElement.alt} (Yüklenemedi)`;
             }
             if (!gameRunning) drawInitialScreen();
         };
@@ -264,29 +278,34 @@
                     ballImage.src = e.target.result;
                     imagePreview.src = e.target.result;
                     imagePreview.style.display = 'inline-block';
-                    setActiveHeadVisuals(imagePreview); // Yüklenen resmi aktif yap
+                    setActiveHeadVisuals(imagePreview);
                 }
                 reader.readAsDataURL(event.target.files[0]);
             }
         });
 
-        // Renkler ve Oyun Nesneleri (öncekiyle aynı, kısaltıldı)
         const NET_COLOR = 'rgba(255, 255, 255, 0.5)', PADDLE_COLOR = '#3498db', TEXT_COLOR = '#ecf0f1', BALL_FALLBACK_COLOR = '#e74c3c';
-        const net = { x: 0, y: 0, width: 2, height: 10, color: NET_COLOR }; // x setCanvasDimensions'da ayarlanacak
+        const net = { x: 0, y: 0, width: 2, height: 10, color: NET_COLOR };
+        // userPaddle.speed, fare ile kontrol edildiği için deltaTime'a ihtiyaç duymaz, anlık konuma ayarlanır.
         const userPaddle = { x: 10, y: 0, width: 15, height: 100, color: PADDLE_COLOR, score: 0, speed: 10 };
-        const comPaddle = { x: 0, y: 0, width: 15, height: 100, color: PADDLE_COLOR, score: 0, speed: 4.9 }; // Biraz daha zor
-        const ball = { x: 0, y: 0, baseSize: 25, speed: 5, velocityX: 5, velocityY: 5, image: ballImage };
+        const comPaddle = { x: 0, y: 0, width: 15, height: 100, color: PADDLE_COLOR, score: 0, speed: 290 }; // Piksel/saniye
+        const ball = {
+            x: 0, y: 0, baseSize: 25,
+            speed: 320, // Başlangıç genel hızı (Piksel/saniye) - resetBall'da yönlü hızlara dönüştürülür
+            velocityX: 0, // resetBall'da ayarlanacak
+            velocityY: 0, // resetBall'da ayarlanacak
+            image: ballImage,
+            maxSpeed: 700, // Maksimum hız (piksel/saniye)
+            speedIncrement: 35 // Her vuruşta hız artışı (piksel/saniye)
+        };
 
-
-        // Rekor Sistemi
-        let highScore = localStorage.getItem('pongHighScoreKafali') || 0; // Farklı bir key
+        let highScore = localStorage.getItem('pongHighScoreKafaliV5') || 0; // localStorage key güncellendi
         highScoreDisplay.textContent = `Rekor: ${highScore}`;
 
         function updateHighScore() {
-            // Sadece kullanıcının skoru rekoru etkilesin
             if (userPaddle.score > highScore) {
                 highScore = userPaddle.score;
-                localStorage.setItem('pongHighScoreKafali', highScore);
+                localStorage.setItem('pongHighScoreKafaliV5', highScore);
                 highScoreDisplay.textContent = `Rekor: ${highScore}`;
             }
         }
@@ -294,7 +313,6 @@
             currentScoreDisplay.textContent = `Skor: ${userPaddle.score} - ${comPaddle.score}`;
         }
 
-        // Çizim Fonksiyonları
         function drawRect(x, y, w, h, color) { context.fillStyle = color; context.fillRect(x, y, w, h); }
         function drawCircle(x, y, r, color) { context.fillStyle = color; context.beginPath(); context.arc(x, y, r, 0, Math.PI * 2); context.closePath(); context.fill(); }
         function drawKafa() {
@@ -310,14 +328,12 @@
         function drawNet() { for (let i = 0; i <= canvas.height; i += 15) drawRect(net.x, net.y + i, net.width, net.height, net.color); }
         function drawText(text, x, y, color = TEXT_COLOR, fontSize = "24px", font = "Arial") { context.fillStyle = color; context.font = `${fontSize} ${font}`; context.textAlign = "center"; context.fillText(text, x, y); }
 
-        // Raket Hareketleri
         canvas.addEventListener('mousemove', movePaddle);
         canvas.addEventListener('touchmove', movePaddleTouch, { passive: false });
         function movePaddle(evt) { if (!gameRunning) return; let rect = canvas.getBoundingClientRect(); userPaddle.y = evt.clientY - rect.top - userPaddle.height / 2; restrictPaddleMovement(userPaddle); }
         function movePaddleTouch(evt) { if (!gameRunning) return; evt.preventDefault(); if (evt.touches.length > 0) { let rect = canvas.getBoundingClientRect(); userPaddle.y = evt.touches[0].clientY - rect.top - userPaddle.height / 2; restrictPaddleMovement(userPaddle); } }
         function restrictPaddleMovement(paddle) { if (paddle.y < 0) paddle.y = 0; else if (paddle.y + paddle.height > canvas.height) paddle.y = canvas.height - paddle.height; }
 
-        // Çarpışma
         function collision(b, p) {
             let bEffRadX = b.baseSize, bEffRadY = b.baseSize;
             if (imageLoaded && b.image.complete && b.image.naturalWidth > 0) { const ratio = b.image.naturalWidth / b.image.naturalHeight; bEffRadY = b.baseSize; bEffRadX = bEffRadY * ratio; }
@@ -326,20 +342,36 @@
             return b.right > p.left && b.left < p.right && b.bottom > p.top && b.top < p.bottom;
         }
 
-        // Topu Sıfırla
         function resetBall(serveToPlayer) {
-            ball.x = canvas.width / 2; ball.y = canvas.height / 2; ball.speed = 5;
-            ball.velocityX = (serveToPlayer ? -1 : 1) * ball.speed * 0.7;
-            ball.velocityY = (Math.random() > 0.5 ? 1 : -1) * ball.speed * 0.7;
+            ball.x = canvas.width / 2; ball.y = canvas.height / 2;
+            // Her reset'te topun genel hızını başlangıç değerine ayarla
+            let currentBallSpeed = 320; // Piksel/saniye, ball.speed'in başlangıç değeriyle aynı olmalı
+
+            let angle = (Math.random() * Math.PI / 2) - (Math.PI / 4); // -45 ile +45 derece arası rastgele açı
+            // Servis atan oyuncuya göre topun yönünü belirle
+            // Oyuncu servis atıyorsa (serveToPlayer true), top sağa doğru (-1 ile çarpılmaz)
+            // Bilgisayar servis atıyorsa (serveToPlayer false), top sola doğru (-1 ile çarpılır)
+            const directionMultiplier = serveToPlayer ? 1 : -1;
+
+            // Topun başlangıç hızını bileşenlerine ayır
+            // Topun %70 hızla başlaması için 0.7 ile çarpılıyor.
+            ball.velocityX = directionMultiplier * currentBallSpeed * Math.cos(angle) * 0.7;
+            ball.velocityY = currentBallSpeed * Math.sin(angle) * 0.7;
         }
 
-        // Güncelleme
-        function update() {
-            ball.x += ball.velocityX; ball.y += ball.velocityY;
+
+        function update(deltaTime) {
+            if (!deltaTime || deltaTime > 0.1) { // Çok büyük deltaTime değerlerini engelle (tarayıcı sekmesi arka plana alındığında vb.)
+                deltaTime = 1/60; // Varsayılan bir değere düşür
+            }
+
+            ball.x += ball.velocityX * deltaTime;
+            ball.y += ball.velocityY * deltaTime;
+
             let comPaddleCenter = comPaddle.y + comPaddle.height / 2;
-            if (Math.abs(comPaddleCenter - ball.y) > comPaddle.height * 0.1) { // Daha az titreme için
-                if (comPaddleCenter < ball.y) comPaddle.y += comPaddle.speed;
-                else if (comPaddleCenter > ball.y) comPaddle.y -= comPaddle.speed;
+            if (Math.abs(comPaddleCenter - ball.y) > comPaddle.height * 0.1) {
+                if (comPaddleCenter < ball.y) comPaddle.y += comPaddle.speed * deltaTime;
+                else if (comPaddleCenter > ball.y) comPaddle.y -= comPaddle.speed * deltaTime;
             }
             restrictPaddleMovement(comPaddle);
 
@@ -350,21 +382,32 @@
             if (collision(ball, player)) {
                 let collidePoint = (ball.y - (player.y + player.height / 2)) / (player.height / 2);
                 let angleRad = (Math.PI / 4) * collidePoint;
-                let direction = (ball.x < canvas.width / 2) ? 1 : -1;
-                ball.velocityX = direction * ball.speed * Math.cos(angleRad);
-                ball.velocityY = ball.speed * Math.sin(angleRad);
-                ball.speed += 0.08; // Hız artışı biraz daha yavaş
-                if (ball.speed > 11) ball.speed = 11; // Maksimum hız
+                let collisionDirection = (ball.x < canvas.width / 2) ? 1 : -1;
+
+                // Topun mevcut hız büyüklüğünü al
+                let currentSpeedMagnitude = Math.sqrt(ball.velocityX * ball.velocityX + ball.velocityY * ball.velocityY);
+                // Yeni hızı hesapla
+                let newSpeed = currentSpeedMagnitude + ball.speedIncrement;
+                if (newSpeed > ball.maxSpeed) newSpeed = ball.maxSpeed;
+
+                ball.velocityX = collisionDirection * newSpeed * Math.cos(angleRad);
+                ball.velocityY = newSpeed * Math.sin(angleRad);
             }
 
             let bEffRadX = (imageLoaded && ball.image.complete && ball.image.naturalWidth > 0) ? (ball.baseSize * (ball.image.naturalWidth / ball.image.naturalHeight)) : ball.baseSize;
-            let serveToPlayerNext = true;
-            if (ball.x - bEffRadX < 0) { comPaddle.score++; serveToPlayerNext = true; resetBall(serveToPlayerNext); }
-            else if (ball.x + bEffRadX > canvas.width) { userPaddle.score++; serveToPlayerNext = false; resetBall(serveToPlayerNext); }
+            let serveToPlayerNext = true; // Varsayılan olarak oyuncu servis atar (bilgisayar sayı alırsa)
+            if (ball.x - bEffRadX < 0) { // Bilgisayar skor yapar
+                comPaddle.score++;
+                serveToPlayerNext = true; // Oyuncu servis atacak
+                resetBall(serveToPlayerNext);
+            } else if (ball.x + bEffRadX > canvas.width) { // Kullanıcı skor yapar
+                userPaddle.score++;
+                serveToPlayerNext = false; // Bilgisayar servis atacak
+                resetBall(serveToPlayerNext);
+            }
             updateHighScore(); updateCurrentScoreDisplay();
         }
 
-        // Render
         function render() {
             drawRect(0, 0, canvas.width, canvas.height, "rgba(0, 0, 0, 0.95)");
             drawNet();
@@ -373,31 +416,49 @@
             drawKafa();
         }
 
-        // Oyun Döngüsü ve Başlangıç Ekranı
-        function gameLoop() { if (!gameRunning) return; update(); render(); animationFrameId = requestAnimationFrame(gameLoop); }
+        function gameLoop(currentTime) {
+            if (!gameRunning) return;
+
+            if (!lastTime) {
+                lastTime = currentTime;
+                animationFrameId = requestAnimationFrame(gameLoop);
+                return;
+            }
+
+            const deltaTime = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+
+            update(deltaTime);
+            render();
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
         function drawInitialScreen() {
             drawRect(0, 0, canvas.width, canvas.height, "rgba(0, 0, 0, 0.95)");
             drawNet();
             drawRect(userPaddle.x, userPaddle.y, userPaddle.width, userPaddle.height, userPaddle.color);
             drawRect(comPaddle.x, comPaddle.y, comPaddle.width, comPaddle.height, comPaddle.color);
             drawKafa();
-            drawText("Başlamak için 'Oyunu Başlat'a tıklayın", canvas.width / 2, canvas.height / 2 - 60, "#FFF", "22px", "Arial");
-            if (imageLoaded && ball.image.complete && ball.image.naturalWidth === 0) { // Yükleme hatası varsa
-                 drawText("Seçilen resim yüklenemedi!", canvas.width / 2, canvas.height / 2 + 30, "#E74C3C", "18px", "Arial");
+            drawText("Başlamak için 'Oyunu Başlat'a tıklayın", canvas.width / 2, canvas.height / 2 - 70, "#FFF", "22px", "Arial");
+            if (!imageLoaded && ballImage.src && !ballImage.src.startsWith('data:') && !ballImage.src.includes('placehold.co')) {
+                 drawText(`"${ballImage.src.split('/').pop()}" yüklenemedi!`, canvas.width / 2, canvas.height / 2 + 40, "#E74C3C", "16px", "Arial");
             }
             updateCurrentScoreDisplay();
         }
 
         function startGame() {
             if (gameRunning) return;
+            if (!imageLoaded && ballImage.src && !ballImage.src.startsWith('data:') && !ballImage.src.includes('placehold.co')) {
+                 alert(`Uyarı: Seçili kafa resmi ("${ballImage.src.split('/').pop()}") yüklenemedi. Oyun yedek topla başlayacak.`);
+            }
             gameRunning = true; startButton.textContent = "Oyun Sürüyor..."; startButton.disabled = true;
             userPaddle.score = 0; comPaddle.score = 0;
             updateCurrentScoreDisplay();
-            ball.speed = 5; resetBall(true);
-            userPaddle.y = canvas.height / 2 - userPaddle.height / 2;
-            comPaddle.y = canvas.height / 2 - comPaddle.height / 2;
+            resetBall(true); // İlk servis oyuncuya
+            
+            lastTime = 0;
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
-            gameLoop();
+            animationFrameId = requestAnimationFrame(gameLoop);
         }
         startButton.addEventListener('click', () => { if (!gameRunning) startGame(); });
 
@@ -406,12 +467,11 @@
             if (!gameRunning) drawInitialScreen(); else render();
         });
 
-        // İlk Kurulum
         setCanvasDimensions();
-        // drawInitialScreen çağrısı ballImage.onload veya onerror içinde yapılacak.
-        // İlk varsayılan kafa seçimi yukarıda yapıldı, bu da onload'u tetikleyecektir.
         updateCurrentScoreDisplay();
+        // İlk kafa seçimi ve `drawInitialScreen` çağrısı, defaultHeads döngüsü ve ballImage.onload/onerror içinde yönetiliyor.
 
     </script>
 </body>
 </html>
+
