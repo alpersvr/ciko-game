@@ -196,7 +196,7 @@
             velocity: 0,
             // FİZİK SABİTLERİ (Saniye Başına)
             gravity: 400,    // Yerçekimi (piksel/saniye^2) - Örn: 0.35 kare başına ise (60fps'de) ~ 0.35*60*60 = 1260
-            jumpForce: -250, // Zıplama kuvveti (piksel/saniye) - Örn: -7.5 kare başına ise ~ -7.5*60 = -450
+            jumpForce: -230, // Zıplama kuvveti (piksel/saniye) - Örn: -7.5 kare başına ise ~ -7.5*60 = -450
             image: new Image()
         };
         const defaultBirds = [
@@ -256,7 +256,7 @@
             bird.y = canvasHeight / 2;
 
             pipeWidth = 60 * scaleFactor;
-            pipeGap = 180 * scaleFactor; // Dikey boşluk da ölçeklensin
+            pipeGap = 220 * scaleFactor; // Dikey boşluk da ölçeklensin
             pipeSpeed = (2.0 * 60) * scaleFactor; // Temel hızı saniye başına piksele çevir ve ölçekle
                                                // (2.0 kare başına * 60 fps varsayımı = 120 piksel/saniye)
 
