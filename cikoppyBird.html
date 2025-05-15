@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Çikoppy Bird</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -155,8 +155,8 @@
             width: 40,
             height: 30,
             velocity: 0,
-            gravity: 0.5, // Kare başına yerçekimi
-            jumpForce: -9, // Zıplama gücü (kare başına)
+            gravity: 0.2, // Kare başına yerçekimi
+            jumpForce: -7, // Zıplama gücü (kare başına)
             image: new Image()
         };
 
@@ -173,11 +173,11 @@
         // Borular
         let pipes = [];
         const pipeWidth = 60;
-        const pipeGap = 160;
+        const pipeGap = 200;
         let pipeTimer = 0;
         const pipeInterval = 3000; // BORU ARALIĞI ARTIRILDI: 1800 -> 2500 (milisaniye)
         let lastPipeTime = 0;
-        const pipeSpeed = 2.5; // Boru hızı (kare başına piksel)
+        const pipeSpeed = 2; // Boru hızı (kare başına piksel)
 
         // Oyun kontrolü
         let score = 0;
