@@ -2,33 +2,60 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
     <title>Çikoppy Bird</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* Üstten başlaması için */
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #2c3e50; /* Tailwind gray-800 gibi */
+            font-family: 'Arial', sans-serif;
+            color: #ecf0f1; /* Tailwind gray-200 gibi */
+            padding: 1rem; /* Tailwind p-4 */
+            box-sizing: border-box;
+            overflow-x: hidden; /* Yatay kaydırmayı engelle */
+        }
+        .game-wrapper { /* Oyun ve kontrolleri saran ana sarmalayıcı */
+            width: 100%;
+            max-width: 420px; /* Canvas'tan biraz daha geniş olabilir */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
         #gameCanvas {
-            border: 2px solid #4a5568; /* Tailwind gray-600 */
-            background: linear-gradient(to bottom, #87CEEB 0%, #E0F7FA 100%); /* Sky gradient */
+            border: 2px solid #4a5568;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F7FA 100%);
             display: block;
             margin: 0 auto;
+            width: 100%; /* Konteynerine göre genişle */
+            max-width: 400px; /* Maksimum genişlik */
+            height: auto; /* Oranı koru */
+            aspect-ratio: 2 / 3; /* Canvas oranını koru (400/600) */
         }
         .game-container {
             position: relative;
-            width: fit-content; /* Canvas genişliğine uyar */
-            margin: 0 auto; /* Ortalamak için */
+            width: 100%;
+            max-width: 400px; /* Canvas ile aynı */
+            margin: 0 auto;
         }
         .game-over {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 0, 0.75); /* Biraz daha koyu */
+            background-color: rgba(0, 0, 0, 0.75);
             color: white;
-            padding: 25px; /* Biraz daha büyük */
-            border-radius: 10px;
+            padding: 1.5rem; /* Tailwind p-6 */
+            border-radius: 0.5rem; /* Tailwind rounded-lg */
             text-align: center;
-            display: none; /* Başlangıçta gizli */
-            z-index: 10; /* Diğer elemanların üzerinde */
+            display: none;
+            z-index: 10;
+            width: 80%; /* İçeriğe göre genişlik */
         }
         .custom-file-input {
             color: transparent;
@@ -37,49 +64,51 @@
             visibility: hidden;
         }
         .custom-file-input::before {
-            content: 'Kuş Resmi Seç'; /* Türkçeleştirildi */
+            content: 'Kuş Resmi Seç';
             color: white;
             display: inline-block;
-            background: #4299e1; /* Tailwind blue-500 */
-            border-radius: 0.25rem; /* Tailwind rounded-sm */
-            padding: 0.5rem 0.75rem; /* Tailwind py-2 px-3 */
+            background: #4299e1;
+            border-radius: 0.25rem;
+            padding: 0.5rem 0.75rem;
             outline: none;
             white-space: nowrap;
             cursor: pointer;
-            font-weight: 500; /* Tailwind font-medium */
+            font-weight: 500;
             font-size: 14px;
+            width: 100%; /* Mobil için tam genişlik */
+            text-align: center;
         }
         .custom-file-input:hover::before {
-            background: #3182ce; /* Tailwind blue-600 */
+            background: #3182ce;
         }
-        /* Varsayılan kuş görselleri için stiller */
         #defaultBirdsContainer {
-            margin-top: 0.75rem; /* Tailwind mt-3 */
-            margin-bottom: 0.5rem; /* Tailwind mb-2 */
+            margin-top: 0.75rem;
+            margin-bottom: 0.5rem;
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             align-items: center;
-            gap: 0.5rem; /* Tailwind gap-2 */
+            gap: 0.5rem;
         }
         .default-bird-img {
-            width: 40px; /* Kuş boyutuyla uyumlu */
+            width: 40px;
             height: 30px;
-            border: 2px solid #cbd5e0; /* Tailwind gray-400 */
+            border: 2px solid #cbd5e0;
             border-radius: 0.25rem;
             cursor: pointer;
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
-            object-fit: contain; /* Resmin orantısını koru */
+            object-fit: contain;
         }
         .default-bird-img:hover {
-            border-color: #718096; /* Tailwind gray-500 */
+            border-color: #718096;
         }
         .default-bird-img.active-bird, #birdPreview.active-bird {
-            border-color: #4299e1; /* Tailwind blue-500 */
+            border-color: #4299e1;
             box-shadow: 0 0 8px #4299e1;
         }
         #birdPreviewContainer {
             margin-top: 0.5rem;
+            text-align: center; /* Önizlemeyi ortala */
         }
         #birdPreview {
             width: 40px;
@@ -87,48 +116,52 @@
             border: 2px solid transparent;
             border-radius: 0.25rem;
             object-fit: contain;
-            display: inline-block; /* Diğerleriyle aynı hizada */
+            display: inline-block;
             vertical-align: middle;
+        }
+        #controlsPanel { /* Kontrol paneli için yeni ID */
+             margin-top: 1rem; /* Tailwind mt-4 */
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center py-8">
-    <div class="text-center mb-6">
-        <h1 class="text-4xl font-bold text-gray-800 mb-2">Çikoppy Bird</h1>
-        <p class="text-gray-600">Çikoyu uçurmak için boşluk tuşuna basın, tıklayın veya dokunun</p>
-    </div>
-
-    <div class="game-container">
-        <canvas id="gameCanvas" width="400" height="600"></canvas>
-        <div class="game-over" id="gameOver">
-            <h2 class="text-2xl font-bold mb-4">Oyun Bitti!</h2>
-            <p class="mb-4">Skorunuz: <span id="finalScore">0</span></p>
-            <button id="restartBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
-                Tekrar Oyna
-            </button>
+<body class="bg-gray-800 min-h-screen flex flex-col items-center py-6 sm:py-8">
+    <div class="game-wrapper">
+        <div class="text-center mb-4 sm:mb-6">
+            <h1 class="text-3xl sm:text-4xl font-bold text-white mb-2">Custom Flappy Bird</h1>
+            <p class="text-gray-400 text-sm sm:text-base">Kuşu uçurmak için dokunun veya boşluk/tıklama yapın</p>
         </div>
-    </div>
 
-    <div class="mt-6 bg-white p-6 rounded-lg shadow-md w-full max-w-md">
-        <div class="flex flex-col space-y-4">
-            <div>
-                <label class="block text-gray-700 font-medium mb-2">Kuşunu Özelleştir</label>
-                <p class="text-xs text-gray-500 mb-1">Varsayılan bir kuş seçin veya kendiniz yükleyin:</p>
-                <div id="defaultBirdsContainer">
+        <div class="game-container">
+            <canvas id="gameCanvas"></canvas> <div class="game-over" id="gameOver">
+                <h2 class="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Oyun Bitti!</h2>
+                <p class="mb-3 sm:mb-4 text-sm sm:text-base">Skorunuz: <span id="finalScore">0</span></p>
+                <button id="restartBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded text-sm sm:text-base">
+                    Tekrar Oyna
+                </button>
+            </div>
+        </div>
+
+        <div id="controlsPanel" class="mt-4 bg-gray-700 p-4 sm:p-6 rounded-lg shadow-md w-full">
+            <div class="flex flex-col space-y-3 sm:space-y-4">
+                <div>
+                    <label class="block text-gray-300 font-medium mb-1 sm:mb-2 text-sm sm:text-base">Kuşunu Özelleştir</label>
+                    <p class="text-xs text-gray-400 mb-1">Varsayılan seçin veya yükleyin:</p>
+                    <div id="defaultBirdsContainer">
+                        </div>
+                    <input type="file" id="birdImageInput" accept="image/*" class="custom-file-input mt-2">
+                    <div id="birdPreviewContainer" class="mt-2">
+                        <span class="text-xs text-gray-400">Yüklenen: </span>
+                        <img id="birdPreview" src="#" alt="Yüklenen Kuş" style="display:none;">
                     </div>
-                <input type="file" id="birdImageInput" accept="image/*" class="custom-file-input mt-2">
-                <div id="birdPreviewContainer" class="mt-2">
-                    <span class="text-xs text-gray-600">Yüklenen: </span>
-                    <img id="birdPreview" src="#" alt="Yüklenen Kuş" style="display:none;">
                 </div>
-            </div>
-            <div class="flex justify-between items-center">
-                <span class="text-gray-700">Mevcut Skor:</span>
-                <span id="currentScore" class="font-bold text-xl">0</span>
-            </div>
-            <div class="flex justify-between items-center">
-                <span class="text-gray-700">En Yüksek Skor:</span>
-                <span id="highScore" class="font-bold text-xl">0</span>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-300 text-sm sm:text-base">Mevcut Skor:</span>
+                    <span id="currentScore" class="font-bold text-lg sm:text-xl">0</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-300 text-sm sm:text-base">En Yüksek Skor:</span>
+                    <span id="highScore" class="font-bold text-lg sm:text-xl">0</span>
+                </div>
             </div>
         </div>
     </div>
@@ -146,21 +179,26 @@
         const birdImageInput = document.getElementById('birdImageInput');
         const defaultBirdsContainer = document.getElementById('defaultBirdsContainer');
         const birdPreview = document.getElementById('birdPreview');
-        const gameOverSound = document.getElementById('gameOverSound'); // Oyun bitti sesi elementi
+        const gameOverSound = document.getElementById('gameOverSound');
+
+        // Canvas boyutları (JS ile dinamik olarak ayarlanacak)
+        let canvasWidth = 400;
+        let canvasHeight = 600;
+        const originalCanvasWidth = 400; // Orijinal oran için referans
+        const originalCanvasHeight = 600;
 
         // Oyun durumu
         let bird = {
-            x: 100,
-            y: 300,
-            width: 40,
-            height: 30,
+            x: 0, // setCanvasDimensions içinde ayarlanacak
+            y: 0, // setCanvasDimensions içinde ayarlanacak
+            width: 0, // setCanvasDimensions içinde ayarlanacak
+            height: 0, // setCanvasDimensions içinde ayarlanacak
             velocity: 0,
-            gravity: 0.05, // Kare başına yerçekimi
-            jumpForce: -6, // Zıplama gücü (kare başına)
+            // FİZİK SABİTLERİ (Saniye Başına)
+            gravity: 400,    // Yerçekimi (piksel/saniye^2) - Örn: 0.35 kare başına ise (60fps'de) ~ 0.35*60*60 = 1260
+            jumpForce: -250, // Zıplama kuvveti (piksel/saniye) - Örn: -7.5 kare başına ise ~ -7.5*60 = -450
             image: new Image()
         };
-
-        // Varsayılan kuş görselleri (images/ klasöründe olmalı)
         const defaultBirds = [
             { name: "Bonus Çiko", src: 'images/bonusCiko.jpeg' }, // Örnek: images/bird1.png
             { name: "havuz Çiko", src: 'images/havuzCiko.jpeg' }, // Örnek: images/bird2.png
@@ -172,19 +210,67 @@
 
         // Borular
         let pipes = [];
-        const pipeWidth = 60;
-        const pipeGap = 200;
+        let pipeWidth = 0; // setCanvasDimensions içinde ayarlanacak
+        let pipeGap = 0;   // setCanvasDimensions içinde ayarlanacak
         let pipeTimer = 0;
-        const pipeInterval = 3000; // BORU ARALIĞI ARTIRILDI: 1800 -> 2500 (milisaniye)
+        let pipeInterval = 2800; // Boru gelme aralığı (milisaniye) - Mobil için biraz daha uzun
         let lastPipeTime = 0;
-        const pipeSpeed = 2; // Boru hızı (kare başına piksel)
+        let pipeSpeed = 0; // setCanvasDimensions içinde ayarlanacak
 
-        // Oyun kontrolü
         let score = 0;
-        let flappyHighScore = localStorage.getItem('flappyHighScoreV2') || 0;
+        let flappyHighScore = localStorage.getItem('flappyHighScoreV4') || 0; // Key güncellendi
         let gameRunning = false;
         let animationId = null;
         let lastFrameTime = 0;
+
+        function setGameScaleAndDimensions() {
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+            
+            // Oyun alanının maksimum genişliği (CSS'deki .game-wrapper max-width ile uyumlu)
+            const maxGameWidth = 420;
+            let targetCanvasWidth = Math.min(screenWidth * 0.95, maxGameWidth);
+
+            // Canvas oranını koru (2:3)
+            canvas.width = targetCanvasWidth;
+            canvas.height = targetCanvasWidth * (originalCanvasHeight / originalCanvasWidth);
+
+            // Eğer hesaplanan yükseklik ekranı aşıyorsa, yüksekliğe göre yeniden ölçekle
+            const controlsHeightEstimate = 250; // Kontrol panelinin yaklaşık yüksekliği
+            if (canvas.height > screenHeight - controlsHeightEstimate - 100) { // Başlık vb. için de pay bırak
+                canvas.height = screenHeight - controlsHeightEstimate - 100;
+                if (canvas.height < 300) canvas.height = 300; // Minimum yükseklik
+                canvas.width = canvas.height * (originalCanvasWidth / originalCanvasHeight);
+            }
+
+
+            canvasWidth = canvas.width;
+            canvasHeight = canvas.height;
+
+            // Oyun elemanlarını yeni canvas boyutlarına göre ölçekle
+            const scaleFactor = canvasWidth / originalCanvasWidth;
+
+            bird.width = 40 * scaleFactor;
+            bird.height = 30 * scaleFactor;
+            bird.x = canvasWidth / 4; // Ekranın soluna daha yakın
+            bird.y = canvasHeight / 2;
+
+            pipeWidth = 60 * scaleFactor;
+            pipeGap = 180 * scaleFactor; // Dikey boşluk da ölçeklensin
+            pipeSpeed = (2.0 * 60) * scaleFactor; // Temel hızı saniye başına piksele çevir ve ölçekle
+                                               // (2.0 kare başına * 60 fps varsayımı = 120 piksel/saniye)
+
+            // Fizik sabitleri ölçeklenmemeli (zaman tabanlı oldukları için)
+            // Ancak zıplama ve yerçekimi hissi farklı ekran boyutlarında değişebilir,
+            // bu yüzden gerekirse küçük ayarlamalar yapılabilir.
+            // jumpForce ve gravity değerleri saniye başına ayarlandığı için ölçeklenmemeli.
+
+            // Eğer oyun çalışmıyorsa başlangıç ekranını yeniden çiz
+            if (!gameRunning) {
+                showInitialScreen();
+            }
+        }
+
 
         highScoreSpan.textContent = flappyHighScore;
 
@@ -217,30 +303,43 @@
         }
 
         function selectDefaultBird(birdSrc, clickedImgElement) {
-            bird.image.src = birdSrc;
+            bird.image.src = birdSrc; // Bu, bird.image.onload'u tetikleyecektir
             birdPreview.src = "";
             birdPreview.style.display = 'none';
             birdImageInput.value = "";
             setActiveBirdVisuals(clickedImgElement);
         }
+        
+        bird.image.onload = () => { // Kuş resmi yüklendiğinde çağrılır
+             if (!gameRunning) showInitialScreen(); // Oyun başlamadıysa başlangıç ekranını güncelle
+        };
+        bird.image.onerror = function() {
+            console.error("Ana kuş resmi yüklenemedi, placeholder kullanılıyor: " + bird.image.src);
+            if (defaultBirds.length > 0) {
+                 bird.image.src = defaultBirds[defaultBirds.length -1].src;
+            } else {
+                bird.image.src = 'https://via.placeholder.com/40x30.png?text=Kuş';
+            }
+             if (!gameRunning) showInitialScreen();
+        };
 
         if (defaultBirds.length > 0) {
             const firstDefaultImgElement = defaultBirdsContainer.querySelector('.default-bird-img');
             if (firstDefaultImgElement) {
                 selectDefaultBird(defaultBirds[0].src, firstDefaultImgElement);
+            } else { // Eğer img elementleri oluşmadıysa (örn. hepsi hatalıysa)
+                bird.image.src = defaultBirds[defaultBirds.length - 1].src; // Placeholder'ı yükle
             }
         } else {
-            bird.image.src = 'https://cdn-icons-png.flaticon.com/512/828/828731.png';
+            bird.image.src = 'https://cdn-icons-png.flaticon.com/512/828/828731.png'; // Genel fallback
         }
-        bird.image.onerror = function() {
-            console.error("Ana kuş resmi yüklenemedi, placeholder kullanılıyor.");
-            bird.image.src = defaultBirds[defaultBirds.length -1].src;
-        };
+
 
         canvas.addEventListener('click', handleJump);
         canvas.addEventListener('touchstart', handleJump, { passive: false });
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
+                e.preventDefault(); // Sayfanın kaymasını engelle
                 handleJump();
             }
         });
@@ -267,7 +366,7 @@
                 startGame();
                 return;
             }
-            bird.velocity = bird.jumpForce;
+            bird.velocity = bird.jumpForce; // Hız anlık olarak ayarlanır (saniye başına)
         }
 
         function startGame() {
@@ -277,7 +376,8 @@
                 gameOverSound.load();
             }
             
-            bird.y = canvas.height / 2 - bird.height / 2;
+            setGameScaleAndDimensions(); // Oyun başladığında boyutları ayarla/kontrol et
+            bird.y = canvasHeight / 2 - bird.height / 2;
             bird.velocity = 0;
             pipes = [];
             score = 0;
@@ -307,7 +407,7 @@
             
             if (score > flappyHighScore) {
                 flappyHighScore = score;
-                localStorage.setItem('flappyHighScoreV2', flappyHighScore);
+                localStorage.setItem('flappyHighScoreV4', flappyHighScore);
                 highScoreSpan.textContent = flappyHighScore;
             }
             
@@ -316,39 +416,47 @@
         }
 
         function createPipe() {
-            const minPipeHeight = 50;
-            const maxPipeHeight = canvas.height - pipeGap - minPipeHeight;
-            const topPipeHeight = Math.random() * (maxPipeHeight - minPipeHeight) + minPipeHeight;
+            const minPipeHeight = 50 * (canvasWidth / originalCanvasWidth); // Ölçeklenmiş min yükseklik
+            const currentPipeGap = pipeGap; // Zaten ölçeklenmiş
+            const maxTopPipeHeight = canvasHeight - currentPipeGap - minPipeHeight - (20 * (canvasWidth/originalCanvasWidth)); // -20 yer için (ölçeklenmiş)
+            
+            let topPipeHeight = Math.random() * (maxTopPipeHeight - minPipeHeight) + minPipeHeight;
+            if (topPipeHeight < minPipeHeight) topPipeHeight = minPipeHeight;
+            if (topPipeHeight > maxTopPipeHeight) topPipeHeight = maxTopPipeHeight;
+
 
             pipes.push({
-                x: canvas.width,
+                x: canvasWidth,
                 topHeight: topPipeHeight,
-                bottomY: topPipeHeight + pipeGap,
+                bottomY: topPipeHeight + currentPipeGap,
                 width: pipeWidth,
                 passed: false
             });
         }
 
-        function update(deltaTime) {
+        function update(dt) { // dt artık saniye cinsinden
             if (!gameRunning) return;
+            if (dt > 0.1) dt = 1/60; // Çok büyük delta time'ı engelle
 
-            // Kuşu güncelle
-            bird.velocity += bird.gravity;
-            bird.y += bird.velocity;
+            // Kuşu güncelle (zaman tabanlı fizik)
+            bird.velocity += bird.gravity * dt;
+            bird.y += bird.velocity * dt;
 
             // Üst/alt çarpışmalarını kontrol et
             if (bird.y < 0) {
                 bird.y = 0;
-                bird.velocity = 0;
+                bird.velocity = 0; // Sıçramayı durdur
             }
-            if (bird.y + bird.height > canvas.height - 20) {
-                bird.y = canvas.height - 20 - bird.height;
+            // Yer için ölçeklenmiş bir değer kullan
+            const groundHeight = 20 * (canvasWidth / originalCanvasWidth);
+            if (bird.y + bird.height > canvasHeight - groundHeight) {
+                bird.y = canvasHeight - groundHeight - bird.height;
                 gameOver();
                 return;
             }
             
             // Boruları güncelle
-            pipeTimer += deltaTime;
+            pipeTimer += dt * 1000; // pipeTimer milisaniye cinsinden tutuluyor
             if (pipeTimer - lastPipeTime > pipeInterval) {
                 createPipe();
                 lastPipeTime = pipeTimer;
@@ -356,7 +464,7 @@
             
             for (let i = pipes.length - 1; i >= 0; i--) {
                 const pipe = pipes[i];
-                pipe.x -= pipeSpeed;
+                pipe.x -= pipeSpeed * dt; // Boru hızı (saniye başına) * geçen süre (saniye)
                 
                 if (!pipe.passed && bird.x > pipe.x + pipe.width) {
                     pipe.passed = true;
@@ -364,11 +472,13 @@
                     currentScoreSpan.textContent = score;
                 }
                 
-                if (
-                    bird.x < pipe.x + pipe.width &&
-                    bird.x + bird.width > pipe.x &&
-                    (bird.y < pipe.topHeight || bird.y + bird.height > pipe.bottomY)
-                ) {
+                // Çarpışma kontrolü
+                const birdRight = bird.x + bird.width;
+                const birdBottom = bird.y + bird.height;
+                const pipeRight = pipe.x + pipe.width;
+
+                if (birdRight > pipe.x && bird.x < pipeRight &&
+                    (bird.y < pipe.topHeight || birdBottom > pipe.bottomY)) {
                     gameOver();
                     return;
                 }
@@ -380,25 +490,29 @@
         }
 
         function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
             
-            const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            const skyGradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
             skyGradient.addColorStop(0, '#87CEEB');
             skyGradient.addColorStop(1, '#E0F7FA');
             ctx.fillStyle = skyGradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
             
             ctx.fillStyle = '#4CAF50';
+            const groundHeight = 20 * (canvasWidth / originalCanvasWidth);
             for (const pipe of pipes) {
                 ctx.fillRect(pipe.x, 0, pipe.width, pipe.topHeight);
-                ctx.fillRect(pipe.x, pipe.bottomY, pipe.width, canvas.height - pipe.bottomY - 20);
+                ctx.fillRect(pipe.x, pipe.bottomY, pipe.width, canvasHeight - pipe.bottomY - groundHeight);
             }
 
             ctx.fillStyle = '#8BC34A';
-            ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+            ctx.fillRect(0, canvasHeight - groundHeight, canvasWidth, groundHeight);
             
             ctx.save();
-            const rotation = Math.min(Math.max(bird.velocity * 2.5, -45), 30);
+            // Kuş dönüşü için hızın normalleştirilmiş bir halini kullan
+            const normalizedVelocity = bird.velocity / (bird.jumpForce * -1.5); // Zıplama gücüne göre normalleştir
+            const rotation = Math.min(Math.max(normalizedVelocity * 45, -45), 30); // Açı sınırları
+            
             ctx.translate(bird.x + bird.width / 2, bird.y + bird.height / 2);
             ctx.rotate(rotation * Math.PI / 180);
             if (bird.image.complete && bird.image.naturalWidth !== 0) {
@@ -406,15 +520,15 @@
             } else {
                 ctx.fillStyle = 'orange';
                 ctx.beginPath();
-                ctx.arc(0, 0, bird.width / 2, 0, Math.PI * 2);
+                ctx.arc(0, 0, bird.width / 2.5, 0, Math.PI * 2); // Biraz daha küçük bir daire
                 ctx.fill();
             }
             ctx.restore();
             
             ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-            ctx.font = '30px Arial';
+            ctx.font = `${28 * (canvasWidth/originalCanvasWidth)}px Arial`; // Skoru ölçekle
             ctx.textAlign = 'center';
-            ctx.fillText(score.toString(), canvas.width / 2, 60);
+            ctx.fillText(score.toString(), canvasWidth / 2, 60 * (canvasWidth/originalCanvasWidth));
         }
 
         function gameLoop(timestamp) {
@@ -423,10 +537,16 @@
                 return;
             }
             
+            if (!lastFrameTime) { // İlk kare için
+                lastFrameTime = timestamp;
+                animationId = requestAnimationFrame(gameLoop);
+                return;
+            }
+            
             const deltaTime = timestamp - lastFrameTime;
             lastFrameTime = timestamp;
             
-            update(deltaTime);
+            update(deltaTime / 1000); // deltaTime'ı saniyeye çevirerek update'e gönder
             draw();
             
             animationId = requestAnimationFrame(gameLoop);
@@ -436,26 +556,38 @@
             gameOverDiv.style.display = 'block';
             finalScoreSpan.textContent = '0';
             restartBtn.textContent = "Oyuna Başla";
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            const skyGradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
             skyGradient.addColorStop(0, '#87CEEB');
             skyGradient.addColorStop(1, '#E0F7FA');
             ctx.fillStyle = skyGradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+            const groundHeight = 20 * (canvasWidth / originalCanvasWidth);
             ctx.fillStyle = '#8BC34A';
-            ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+            ctx.fillRect(0, canvasHeight - groundHeight, canvasWidth, groundHeight);
 
             ctx.fillStyle = 'rgba(0,0,0,0.7)';
-            ctx.font = '20px Arial';
+            ctx.font = `${18 * (canvasWidth/originalCanvasWidth)}px Arial`; // Yazıyı ölçekle
             ctx.textAlign = 'center';
-            ctx.fillText("Başlamak için tıklayın veya boşluk tuşuna basın", canvas.width / 2, canvas.height / 2 - 30);
+            ctx.fillText("Başlamak için dokunun veya boşluk/tıklama yapın", canvasWidth / 2, canvasHeight / 2 - (30 * (canvasWidth/originalCanvasWidth)));
             if (bird.image.complete && bird.image.naturalWidth !==0) {
-                 ctx.drawImage(bird.image, canvas.width / 2 - bird.width / 2, canvas.height / 2 - bird.height / 2 + 20, bird.width, bird.height);
+                 ctx.drawImage(bird.image, canvasWidth / 2 - bird.width / 2, canvasHeight / 2 - bird.height / 2 + (20 * (canvasWidth/originalCanvasWidth)), bird.width, bird.height);
             }
         }
-
+        
+        // İlk Kurulum
+        window.addEventListener('resize', () => {
+            setGameScaleAndDimensions();
+            // Eğer oyun çalışmıyorsa ve canvas yeniden boyutlandıysa, başlangıç ekranını tekrar çiz.
+            if (!gameRunning) {
+                showInitialScreen();
+            }
+        });
+        
+        setGameScaleAndDimensions(); // Sayfa yüklendiğinde boyutları ayarla
         highScoreSpan.textContent = flappyHighScore;
-        showInitialScreen();
+        // showInitialScreen çağrısı setGameScaleAndDimensions içinde ve kuş resmi yüklendiğinde yapılıyor.
 
     </script>
 </body>
